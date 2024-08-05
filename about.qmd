@@ -1,0 +1,15 @@
+---
+title: "About"
+---
+
+I’m Hao Lin.
+
+[https://github.com/hlinca](https://github.com/hlinca)
+
+My email is: hlincontacts@yahoo.com
+
+My project is [Modeling the Impact of Environmental Conditions on Wildfire Incidents in California
+](https://github.com/hlinca/wildfire_model)
+
+[This project was created as a part of Kane’s Data Science Bootcamp.](https://bootcamp.davidkane.info)
+

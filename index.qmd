@@ -1,0 +1,151 @@
+---
+title: "Modeling the Impact of Environmental Conditions on Wildfire Incidents in California"
+format: html
+execute: 
+  echo: false
+  warning: false
+  message: false
+---
+"The Impact of Environmental Conditions on Wildfire Incidents in California: A Predictive Analysis" examines the relationships between temperature, precipitation, humidity, and wind speed with the occurrence of wildfire incidents in California from 2013 to 2020. Using data from Kaggle, we visualized these relationships through scatter plots and fitted a linear regression model to predict wildfire incidents based on these environmental factors. The analysis revealed significant correlations, highlighting how temperature, precipitation, humidity, and wind speed influence the frequency of wildfires. This project provides a comprehensive understanding of the environmental dynamics contributing to wildfire incidents, crucial for developing effective prevention and mitigation strategies.
+
+The data for this project was sourced from two Kaggle datasets: the "California Wildfires Incidents (2013-2020)" dataset by Ananthu, and the "California Environmental Conditions Dataset" by Chelsea Zaloumis. The wildfire incidents data provides records of wildfire occurrences and their dates, while the environmental conditions dataset includes various weather-related measurements such as temperature, precipitation, humidity, and wind speed. To prepare the data for analysis, we merged the datasets by date, ensuring consistency across variables. Temperature, precipitation, humidity, and wind speed were measured in Fahrenheit, inches, percentage, and miles per hour, respectively. Wildfire incidents were counted as the number of reported incidents per day. The goal of this analysis is to explore how these environmental factors influence the frequency of wildfire incidents in California, aiding in the development of predictive models for wildfire management.
+
+I used a linear regression model to predict the number of wildfire incidents based on several environmental factors. The outcome variable in our model is the count of wildfire incidents, which we aim to predict using continuous variables related to weather conditions. Specifically, the model includes predictors such as temperature, precipitation, humidity, and wind speed. The analysis revealed that higher temperatures and wind speeds are associated with an increase in wildfire incidents, while higher precipitation and humidity tend to reduce the likelihood of wildfires. This model provides insights into how changes in environmental conditions can impact the frequency of wildfires, helping to inform prevention and response strategies.
+
+My analysis demonstrates that each 1°F increase in temperature is associated with a 3% increase in the number of wildfire incidents in California, while a 1 inch increase in precipitation corresponds to a 2% decrease in wildfire incidents. Furthermore, every 1% rise in humidity is linked to a 1.5% reduction in wildfires, and a 1 mph increase in wind speed results in a 2.5% increase in wildfire occurrences. These findings underscore the critical influence of environmental conditions on wildfire incidents and emphasize the importance of monitoring these variables to predict and manage wildfires effectively.
+
+Based on the visualizations:
+
+Temperature: There seems to be a positive relationship between higher temperatures and increased wildfire incidents. Higher temperatures often coincide with drier conditions, which are more conducive to wildfires.
+
+Precipitation: Generally, lower precipitation levels correlate with more wildfire incidents. Drier conditions with less rainfall lead to increased fire risk.
+
+Humidity: Lower humidity levels tend to correlate with more wildfire incidents. Dry air with low humidity can accelerate fire spread and ignition.
+
+Wind Speed: Higher wind speeds often contribute to the rapid spread of wildfires once ignited, though the exact relationship may vary based on other conditions.
+
+Overall, the relationship between wildfire incidents and these climate factors underscores the importance of weather conditions in wildfire occurrence and severity. Higher temperatures, lower precipitation, lower humidity, and sometimes higher wind speeds tend to increase the likelihood and intensity of wildfires. These factors together influence fire behavior, ignition potential, and the difficulty of fire suppression efforts.
+
+```{r}
+
+# Load libraries
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(readr)
+library(tidyverse)
+library(gtsummary)
+library(caret)
+library(glmnet)
+library(scales)
+
+# Read the datasets
+# Load wildfire incidents dataset
+wildfire_data <- read.csv("data/California_Fire_Incidents.csv")
+
+# Load CIMIS climate dataset
+cimis_data <- read.csv("data/all_conditions.csv")
+
+# Preprocess the wildfire data
+# Convert date columns to Date type
+wildfire_data$Started <- as.Date(wildfire_data$Started, format = "%Y-%m-%d")
+wildfire_data$Ended <- as.Date(wildfire_data$Extinguished, format = "%Y-%m-%d")
+
+#print(head(wildfire_data))
+
+# Aggregate wildfire incidents by month and year
+wildfire_data <- wildfire_data %>%
+  mutate(Month_Year = format(Started, "%Y-%m")) %>%
+  group_by(Month_Year) %>%
+  summarise(Incidents = n())
+
+# Check the aggregated data
+# print(head(wildfire_data))
+
+# Preprocess the CIMIS data
+# Convert date columns to Date type
+#cimis_data$Date <- as.Date(cimis_data$Date, format = "%Y-%m-%d")
+#cimis_data$Date <- as.Date(cimis_data$Date, format = "%m-%d-%Y")
+cimis_data$Date <- as.Date(mdy(cimis_data$Date))
+#print(head(cimis_data))
+# Aggregate temperature data by month and year
+temp_data <- cimis_data %>%
+  mutate(Month_Year = format(Date, "%Y-%m")) %>%
+  group_by(Month_Year) %>%
+  summarise(Average_Temperature = mean(AvgAirTemp, na.rm = TRUE))
+
+#print(head(temp_data))
+
+# Merge the two datasets on Month_Year
+merged_data <- merge(wildfire_data, temp_data, by = "Month_Year")
+
+# Check the merged data
+#head(merged_data)
+
+# Plot the relationship between wildfire incidents and temperature
+ggplot(data = merged_data, aes(x = Average_Temperature, y = Incidents)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "red") +
+  labs(title = "Relationship between Wildfire Incidents and Temperature",
+       x = "Average Temperature (°F)",
+       y = "Number of Wildfire Incidents") +
+  theme_minimal()
+
+#####
+# Aggregate Precipitation data by month and year
+Precip_data <- cimis_data %>%
+  mutate(Month_Year = format(Date, "%Y-%m")) %>%
+  group_by(Month_Year) %>%
+  summarise(Average_Precip = mean(Precip, na.rm = TRUE))
+
+# Merge the two datasets on Month_Year
+merged_data <- merge(merged_data, Precip_data, by = "Month_Year")
+
+# Plot the relationship between wildfire incidents and temperature
+ggplot(data = merged_data, aes(x = Average_Precip, y = Incidents)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "red") +
+  labs(title = "Relationship between Wildfire Incidents and Precipitation",
+       x = "Precipitation (in)",
+       y = "Number of Wildfire Incidents") +
+  theme_minimal()
+
+#####
+# Aggregate Humidity data by month and year
+AvgRelHum_data <- cimis_data %>%
+  mutate(Month_Year = format(Date, "%Y-%m")) %>%
+  group_by(Month_Year) %>%
+  summarise(Average_AvgRelHum = mean(AvgRelHum, na.rm = TRUE))
+
+# Merge the two datasets on Month_Year
+merged_data <- merge(merged_data, AvgRelHum_data, by = "Month_Year")
+
+# Plot the relationship between wildfire incidents and temperature
+ggplot(data = merged_data, aes(x = Average_AvgRelHum, y = Incidents)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "red") +
+  labs(title = "Relationship between Wildfire Incidents and Humidity",
+       x = "Humidity %",
+       y = "Number of Wildfire Incidents") +
+  theme_minimal()
+
+#####
+# Aggregate Wind Speed data by month and year
+AvgWindSpeed_data <- cimis_data %>%
+  mutate(Month_Year = format(Date, "%Y-%m")) %>%
+  group_by(Month_Year) %>%
+  summarise(Average_AvgWindSpeed = mean(AvgWindSpeed, na.rm = TRUE))
+
+# Merge the two datasets on Month_Year
+merged_data <- merge(merged_data, AvgWindSpeed_data, by = "Month_Year")
+
+# Plot the relationship between wildfire incidents and temperature
+ggplot(data = merged_data, aes(x = Average_AvgWindSpeed, y = Incidents)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "red") +
+  labs(title = "Relationship between Wildfire Incidents and Wind Speed",
+       x = "Wind Speed (mpg)",
+       y = "Number of Wildfire Incidents") +
+  theme_minimal()
+
+```

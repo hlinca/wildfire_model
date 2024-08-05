@@ -1,0 +1,17 @@
+---
+title: "Sources"
+---
+
+**California WildFires (2013-2020)**
+
+[https://www.kaggle.com/datasets/ananthu017/california-wildfire-incidents-20132020](https://www.kaggle.com/datasets/ananthu017/california-wildfire-incidents-20132020)
+
+To preprocess the wildfire data, I converted date columns to Date type, and aggregated wildfire incidents by month and year.
+
+
+**California Environmental Conditions Dataset**
+[https://www.kaggle.com/datasets/chelseazaloumis/cimis-dataset-with-fire-target](https://www.kaggle.com/datasets/chelseazaloumis/cimis-dataset-with-fire-target)
+
+To preprocess the climate data, I converted date columns to Date type.
+
+I merged the two datasets on Month_Year.

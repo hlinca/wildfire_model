@@ -1,0 +1,21 @@
+project:
+  type: website
+
+website:
+  title: "Modeling the Impact of Environmental Conditions on Wildfire Incidents in California"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - model.qmd  
+      - about.qmd
+      - sources.qmd
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+
+
+

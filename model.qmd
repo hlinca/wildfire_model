@@ -1,0 +1,126 @@
+---
+title: "Modeling the Impact of Environmental Conditions on Wildfire Incidents in California"
+format: html
+execute: 
+  echo: false
+  warning: false
+  message: false
+---
+I used a linear regression model to predict the number of wildfire incidents based on several environmental factors. The outcome variable in our model is the count of wildfire incidents, which we aim to predict using continuous variables related to weather conditions. Specifically, the model includes predictors such as temperature, precipitation, humidity, and wind speed. The analysis revealed that higher temperatures and wind speeds are associated with an increase in wildfire incidents, while higher precipitation and humidity tend to reduce the likelihood of wildfires. This model provides insights into how changes in environmental conditions can impact the frequency of wildfires, helping to inform prevention and response strategies.
+
+```{r}
+
+# Load libraries
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(readr)
+library(tidyverse)
+library(gtsummary)
+library(caret)
+library(glmnet)
+library(scales)
+
+# Read the datasets
+# Load wildfire incidents dataset
+wildfire_data <- read.csv("data/California_Fire_Incidents.csv")
+
+# Load CIMIS climate dataset
+cimis_data <- read.csv("data/all_conditions.csv")
+
+# Preprocess the wildfire data
+# Convert date columns to Date type
+wildfire_data$Started <- as.Date(wildfire_data$Started, format = "%Y-%m-%d")
+wildfire_data$Ended <- as.Date(wildfire_data$Extinguished, format = "%Y-%m-%d")
+
+#print(head(wildfire_data))
+
+# Aggregate wildfire incidents by month and year
+wildfire_data <- wildfire_data %>%
+  mutate(Month_Year = format(Started, "%Y-%m")) %>%
+  group_by(Month_Year) %>%
+  summarise(Incidents = n())
+
+# Check the aggregated data
+# print(head(wildfire_data))
+
+# Preprocess the CIMIS data
+# Convert date columns to Date type
+#cimis_data$Date <- as.Date(cimis_data$Date, format = "%Y-%m-%d")
+#cimis_data$Date <- as.Date(cimis_data$Date, format = "%m-%d-%Y")
+cimis_data$Date <- as.Date(mdy(cimis_data$Date))
+#print(head(cimis_data))
+# Aggregate temperature data by month and year
+temp_data <- cimis_data %>%
+  mutate(Month_Year = format(Date, "%Y-%m")) %>%
+  group_by(Month_Year) %>%
+  summarise(Average_Temperature = mean(AvgAirTemp, na.rm = TRUE))
+
+#print(head(temp_data))
+
+# Merge the two datasets on Month_Year
+merged_data <- merge(wildfire_data, temp_data, by = "Month_Year")
+
+# Check the merged data
+#head(merged_data)
+
+
+#####
+# Aggregate Precipitation data by month and year
+Precip_data <- cimis_data %>%
+  mutate(Month_Year = format(Date, "%Y-%m")) %>%
+  group_by(Month_Year) %>%
+  summarise(Average_Precip = mean(Precip, na.rm = TRUE))
+
+# Merge the two datasets on Month_Year
+merged_data <- merge(merged_data, Precip_data, by = "Month_Year")
+
+
+#####
+# Aggregate Humidity data by month and year
+AvgRelHum_data <- cimis_data %>%
+  mutate(Month_Year = format(Date, "%Y-%m")) %>%
+  group_by(Month_Year) %>%
+  summarise(Average_AvgRelHum = mean(AvgRelHum, na.rm = TRUE))
+
+# Merge the two datasets on Month_Year
+merged_data <- merge(merged_data, AvgRelHum_data, by = "Month_Year")
+
+#####
+# Aggregate Wind Speed data by month and year
+AvgWindSpeed_data <- cimis_data %>%
+  mutate(Month_Year = format(Date, "%Y-%m")) %>%
+  group_by(Month_Year) %>%
+  summarise(Average_AvgWindSpeed = mean(AvgWindSpeed, na.rm = TRUE))
+
+# Merge the two datasets on Month_Year
+merged_data <- merge(merged_data, AvgWindSpeed_data, by = "Month_Year")
+
+# Split the data into training and testing sets
+set.seed(123)
+trainIndex <- createDataPartition(merged_data$Incidents, p = .8, 
+                                  list = FALSE, 
+                                  times = 1)
+trainData <- merged_data[ trainIndex,]
+testData  <- merged_data[-trainIndex,]
+
+# Fit a linear regression model
+model <- lm(Incidents ~ Average_Temperature + Average_Precip + Average_AvgRelHum + Average_AvgWindSpeed, data=trainData)
+
+# Display the model summary
+summary(model)
+
+# Predict on the test set
+predictions <- predict(model, newdata=testData)
+
+# Evaluate the model
+postResample(pred = predictions, obs = testData$Incidents)
+
+# Generate a table of parameter estimates using gtsummary
+model_summary <- tbl_regression(model)
+model_summary
+
+```
+Display the mathematical representation using LaTeX:
+
+$Y = \beta_0 + \beta_1 \times \text{Temperature} + \beta_2 \times \text{Precipitation} + \beta_3 \times \text{Humidity} + \beta_4 \times \text{Wind Speed} + \epsilon$
