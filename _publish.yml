@@ -1,0 +1,4 @@
+- source: project
+  quarto-pub:
+    - id: ae05b8a7-9126-49a9-ad6d-92e89a74b524
+      url: 'https://hlinca.quarto.pub/wildfire_model'

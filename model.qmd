@@ -1,5 +1,5 @@
 ---
-title: "Modeling the Impact of Environmental Conditions on Wildfire Incidents in California"
+title: "Model"
 format: html
 execute: 
   echo: false
